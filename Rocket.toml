@@ -1,0 +1,2 @@
+[global.databases]
+post = { url = "postgresql://postgres:ilovekittens@localhost:5432" }
