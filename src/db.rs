@@ -7,7 +7,7 @@ struct Db(postgres::Client);
 async fn init_db(rocket: Rocket<Build>) -> Rocket<Build> {
     const CREATE: &str = r#"
     CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         text TEXT NOT NULL
     )"#;
