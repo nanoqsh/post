@@ -1,5 +1,6 @@
-mod db;
+mod model;
 mod user;
+
 mod prelude {
     pub use crate::user::User;
     pub use serde::{Deserialize, Serialize};
@@ -18,7 +19,7 @@ fn index() -> &'static str {
 #[rocket::main]
 async fn main() {
     let _ = rocket::build()
-        .attach(db::stage())
+        .attach(model::stage())
         .mount("/", routes![index])
         .launch()
         .await;
