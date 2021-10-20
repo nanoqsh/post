@@ -24,7 +24,7 @@ impl<'a> Model<'a> {
         sqlx::query(QUERY)
             .execute(self.0.pool())
             .await
-            .expect("DB initialized");
+            .expect("Create");
     }
 
     pub async fn insert(&self, user: User) -> User {
@@ -50,7 +50,7 @@ impl<'a> Model<'a> {
             .bind(item.email())
             .fetch_one(self.0.pool())
             .await
-            .expect("Inserted");
+            .expect("Insert");
 
         user.saved(
             (id as u32, pub_id),
@@ -58,7 +58,7 @@ impl<'a> Model<'a> {
         )
     }
 
-    pub async fn get(&self, id: Identifier) -> Option<User> {
+    pub async fn find(&self, id: Identifier) -> Option<User> {
         #[derive(sqlx::FromRow)]
         struct Row {
             id: i32,
@@ -87,11 +87,51 @@ impl<'a> Model<'a> {
             .bind(pub_id)
             .fetch_optional(self.0.pool())
             .await
-            .expect("Selected")?;
+            .expect("Select")?;
 
         Some(User::new(name, email).unwrap().saved(
             (id as u32, pub_id),
             DateTime::from_utc(registered, chrono::Utc),
         ))
+    }
+
+    pub async fn update(&self, user: &User) {
+        const QUERY: &str = r#"
+        UPDATE users
+        SET name=$1, email=$2
+        WHERE enabled
+        AND id=$3
+        "#;
+
+        sqlx::query(QUERY)
+            .bind(user.name())
+            .bind(user.email())
+            .bind(user.id())
+            .execute(self.0.pool())
+            .await
+            .expect("Update");
+    }
+
+    pub async fn delete(&self, id: Identifier, hard_delete: bool) {
+        const QUERY_SOFT: &str = r#"
+        UPDATE users
+        SET enabled=FALSE
+        WHERE (id=$1 OR $1 IS NULL)
+        AND (pub_id=$2 OR $2 IS NULL)
+        "#;
+
+        const QUERY_HARD: &str = r#"
+        DELETE FROM users
+        WHERE (id=$1 OR $1 IS NULL)
+        AND (pub_id=$2 OR $2 IS NULL)
+        "#;
+
+        let (id, pub_id) = id.get();
+        sqlx::query(if hard_delete { QUERY_HARD } else { QUERY_SOFT })
+            .bind(id)
+            .bind(pub_id)
+            .execute(self.0.pool())
+            .await
+            .expect("Delete");
     }
 }
