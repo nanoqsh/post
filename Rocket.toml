@@ -1,2 +1,6 @@
-[global.databases]
-post = { url = "postgresql://postgres:ilovekittens@localhost:5432" }
+[global.postgres]
+user = "postgres"
+pass = "ilovekittens"
+host = "localhost"
+port = 5432
+database = "post"

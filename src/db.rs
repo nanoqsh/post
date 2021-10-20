@@ -2,14 +2,36 @@ use crate::prelude::*;
 use rocket::{fairing::AdHoc, Build, Rocket};
 use sqlx::{Error, PgPool, Row};
 
+#[derive(Deserialize)]
+struct Config {
+    user: String,
+    pass: String,
+    host: String,
+    port: u16,
+    database: String,
+}
+
 struct Db {
     pool: PgPool,
 }
 
 impl Db {
-    async fn new() -> Result<Self, Error> {
+    async fn new(config: Config) -> Result<Self, Error> {
+        let Config {
+            user,
+            pass,
+            host,
+            port,
+            database,
+        } = config;
+
+        let url = format!(
+            "postgresql://{}:{}@{}:{}/{}",
+            user, pass, host, port, database
+        );
+
         Ok(Self {
-            pool: PgPool::connect("postgresql://postgres:ilovekittens@localhost:5432/post").await?,
+            pool: PgPool::connect(&url).await?,
         })
     }
 }
@@ -110,7 +132,6 @@ impl<'a> Model<'a> {
         "#;
 
         let (id, pub_id) = id.get();
-
         let Row {
             id,
             pub_id,
@@ -132,7 +153,8 @@ impl<'a> Model<'a> {
 }
 
 async fn init_db(rocket: Rocket<Build>) -> Rocket<Build> {
-    let db = Db::new().await.expect("Database mounted");
+    let config = rocket.figment().extract_inner("postgres").expect("Config");
+    let db = Db::new(config).await.expect("Database mounted");
     let model = Model::new(&db);
     model.create_extension().await;
     model.create_table_users().await;

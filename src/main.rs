@@ -2,6 +2,7 @@ mod db;
 mod user;
 mod prelude {
     pub use crate::user::User;
+    pub use serde::{Deserialize, Serialize};
     pub use uuid::Uuid;
 
     pub type DateTime = chrono::DateTime<chrono::Utc>;
